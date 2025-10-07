@@ -1,0 +1,1 @@
+exports.updloadManualReceiptV1Controller = require('./upload')

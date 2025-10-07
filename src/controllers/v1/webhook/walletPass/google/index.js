@@ -1,0 +1,1 @@
+exports.googleCallbackControllerV1 = require("./googleCallbackControllerV1");

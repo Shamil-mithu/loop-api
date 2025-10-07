@@ -1,0 +1,20 @@
+node_modules
+# Keep environment variables out of version control
+.env
+# prisma/migrations
+dist
+
+/secret.js
+api_client
+/config.json
+/openapitools.json
+/MDES_Digital_Enablement.yaml
+apple-vas-certificates/PassSigning.p12
+apple-vas-certificates/publicKey.base64
+apple-vas-certificates/signerCert.pem
+apple-vas-certificates/signerkey.pem
+apple-vas-certificates/vas_public.base64.txt
+apple-vas-certificates/wwdr.pem
+apple-vas-certificates/AuthKey_V383SF4NZ6.p8
+passModel/custom.pass/pass.json
+src/services/google-wallet/auth/*.json

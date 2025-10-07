@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@root/*": ["./*"],
+      "@src/*": ["src/*"],
+      "@tests/*": ["__tests__/*"],
+      "@database/*": ["database/*"]
+    }
+  }
+}

@@ -1,0 +1,5 @@
+exports.loginTemplate = require('./login')
+exports.emailVerificationTemplate = require('./email-verification')
+exports.passwordResetConfirmation = require('./password-reset-confirmation')
+exports.registrationTemplate = require('./register')
+exports.OtpTemplate = require('./otp.js')

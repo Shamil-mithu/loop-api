@@ -1,0 +1,1 @@
+exports.vtapWebhookControllerV1 = require('./hit');

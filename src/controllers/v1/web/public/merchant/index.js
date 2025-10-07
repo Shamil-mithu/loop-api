@@ -1,0 +1,19 @@
+exports.getAllMerchantsPublicWebV1 = require('./get')
+exports.getAllTagsPublicWebV1 = require('./getTags')
+exports.getMostLovedMerchantPublicWebV1 = require('./isMostLoved')
+exports.getMerchantDetailPublicWebV1 = require('./getDetail')
+exports.searchMerchantsPublicWebV1 = require('./search')
+exports.getRedemptionCodeV1 = require('./getRedemptionCode.js')
+exports.getMerchantVibesPublicWebV1 = require('./getMerchantVibes')
+exports.getAllMerchantVibesV1 = require('./getAllMerchantVibes')
+exports.showAMerchantVibeV1 = require('./showAVibe')
+exports.likeAMerchantVibeV1 = require('./likeAVibe')
+exports.markSeenVibeV1Controller = require('./markSeenVibe')
+exports.markSeenPromotionV1Controller = require('./showAPromotion')
+exports.getAllVibesByPopularityV1Controller = require("./getAllVibesByPopularity");
+exports.postAllVibesByPopularityV1Controller = require("./postAllVibesByPopularity");
+exports.getAllMerchantsNamePublicWebV1 = require('./getNamesAndId')
+exports.checkInToAMerchantV1Controller = require('./checkIn')
+exports.redeemLaterToAMerchantV1Controller = require('./redeemLater')
+exports.checkInRedeemToAMerchantV1Controller = require('./checkInRedeem')
+

@@ -1,0 +1,1 @@
+exports.getAllSliderPublicWebV1 = require('./get')

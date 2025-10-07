@@ -1,0 +1,1 @@
+exports.claimNFTMembershipthroughWebhook = require('./claim')

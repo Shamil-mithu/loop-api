@@ -1,0 +1,1 @@
+exports.getAllFAQsV1 = require('./get')

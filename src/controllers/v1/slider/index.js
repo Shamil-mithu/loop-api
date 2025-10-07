@@ -1,0 +1,1 @@
+exports.getAllSliderV1 = require('./get')

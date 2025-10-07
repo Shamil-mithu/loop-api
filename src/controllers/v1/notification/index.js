@@ -1,0 +1,1 @@
+exports.getAllNotificationsV1 = require('./get')

@@ -1,0 +1,1 @@
+exports.getAllLocalizationV1= require('./get')

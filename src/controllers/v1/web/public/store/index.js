@@ -1,0 +1,7 @@
+exports.getStoresV1PublicWebV1 = require('./getStores')
+exports.showStorePublicWebV1 = require('./showStore')
+exports.getStoreTagsV1 = require('./getTags')
+exports.getStoreCategoriesV1 = require('./getCategories')
+exports.saveAStoreV1 = require('./saveAStore.js')
+exports.getSavedStoresV1 = require('./getSavedStores')
+exports.getStoresByCategoryIdV1 = require('./getStoresByCategory')
