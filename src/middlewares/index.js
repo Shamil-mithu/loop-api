@@ -4,4 +4,5 @@ exports.isLoggedIn = require('./isLoggedIn')
 exports.validate = require("./validator");
 exports.swaggerAuth = require('./swaggerAuth.js')
 exports.publicRepoAuth = require('./publicRepoAuth.js')
+exports.tenantAuth = require('./tenantAuth.js')
 
