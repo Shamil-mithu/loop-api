@@ -1,7 +1,7 @@
 "use strict";
 
 const { Rating, SystemLocalization } = require("@src/models");
-const { verifyAuth, validate } = require("@src/middlewares");
+const { verifyAuth, validate, tenantAuth } = require("@src/middlewares");
 const bodyParser = require("body-parser");
 const {
   RATING_STATUS,
@@ -24,6 +24,7 @@ const { S3Error } = require("@src/errors");
 // -----------------------------------------CONTROLLER---------------------------------------------------------
 
 const CONTROLLER = [
+  tenantAuth(),
   verifyAuth(),
   bodyParser.json(),
   bodyParser.urlencoded({ extended: true }),
@@ -41,6 +42,7 @@ const CONTROLLER = [
   }),
   async function createRatingV1Controller(req, res) {
     try {
+      const { tenantId } = req;
       const {
         customer,
         body: {
@@ -75,6 +77,7 @@ const CONTROLLER = [
         attachmentUrl = `${S3_CDN_URL}/${S3_BUCKET}/${filePath}`;
       }
       const newRating = await Rating.create({
+        tenant_id: tenantId,
         merchant_id: merchantId,
         customer_id: customer.id,
         message,

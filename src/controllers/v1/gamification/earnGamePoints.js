@@ -11,7 +11,7 @@ const {
   Customer,
   Currency,
 } = require("@src/models");
-const { validate, verifyAuth } = require("@src/middlewares");
+const { validate, verifyAuth, tenantAuth } = require("@src/middlewares");
 const bodyParser = require("body-parser");
 const {
   LOG_TYPE,
@@ -39,6 +39,7 @@ const { Joi } = require("@root/src/lib");
 // -----------------------------------------CONTROLLER---------------------------------------------------------
 
 const CONTROLLER = [
+  tenantAuth(),
   verifyAuth(),
   bodyParser.json(),
   validate({
@@ -51,6 +52,7 @@ const CONTROLLER = [
   }),
   async function earnGamePointsV1Controller(req, res) {
     try {
+      const { tenantId } = req;
       const { customer } = req;
       const customer_id = customer.id;
       const { index, type } = req.body;
@@ -105,6 +107,7 @@ const CONTROLLER = [
         Gamification
       );
       const gamificationData = {
+        tenant_id: tenantId,
         customer_id,
         index,
         points,
@@ -147,6 +150,7 @@ const CONTROLLER = [
           ? TRANSACTION_STATUS.ENABLED
           : TRANSACTION_STATUS.DISABLED;
       await CustomerTransaction.create({
+        tenant_id: tenantId,
         entity_id: networkMerchant.id,
         entity_type: COLLECTION.MERCHANT,
         reference_id: new_game_earning.id,

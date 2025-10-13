@@ -1,7 +1,7 @@
 "use strict";
 
 const { Joi } = require("@src/lib");
-const { validate } = require("@src/middlewares");
+const { validate, tenantAuth } = require("@src/middlewares");
 const { Otp, Settings } = require("@src/models");
 const bodyParser = require("body-parser");
 const { response, insertMessageLog } = require("@src/utils");
@@ -12,7 +12,7 @@ const {
   OTP_SENDER_PLATFORM,
   LOG_TYPE,
   HTTP_VERBS,
-  SETTINGS_KEYS
+  SETTINGS_KEYS,
 } = require("@src/constants");
 const jwt = require("jsonwebtoken");
 const { OTP } = require("@src/services");
@@ -22,6 +22,7 @@ const SECRET_KEY = process.env.JWT_AUTH_SECRET;
 //------------------------------------CONTROLLER-------------------------------------
 
 const CONTROLLER = [
+  tenantAuth(),
   bodyParser.json(),
   bodyParser.urlencoded({ extended: true }),
   validate({
@@ -36,6 +37,7 @@ const CONTROLLER = [
   }),
   async function loginInteraction(req, res) {
     try {
+      const { tenantId } = req;
       const { phone_number } = req.body;
       const ph_num =
         (phone_number.code.startsWith("+")
@@ -44,12 +46,12 @@ const CONTROLLER = [
 
       let otp;
       const whatsappOtpSetting = await Settings.findOne({
-        key: SETTINGS_KEYS.STOP_WHATSAPP_OTP_SERVICE
-      })
-      if (whatsappOtpSetting?.value == 'false') {
+        key: SETTINGS_KEYS.STOP_WHATSAPP_OTP_SERVICE,
+      });
+      if (whatsappOtpSetting?.value == "false") {
         otp = await OTP.otpGenerator(6);
       } else {
-        otp = '123456'; // Default OTP for testing purposes
+        otp = "123456"; // Default OTP for testing purposes
       }
 
       const payload = {
@@ -65,6 +67,7 @@ const CONTROLLER = [
         purpose: OTP_PURPOSES.LOGIN,
       });
       const otpCreate = await Otp.create({
+        tenant_id: tenantId,
         code: otp,
         identifier: ph_num,
         purpose: OTP_PURPOSES.LOGIN,
@@ -82,7 +85,7 @@ const CONTROLLER = [
         );
       }
       let number = `${otpCreate.identifier.substring(1)}`;
-      if (whatsappOtpSetting?.value == 'false') {
+      if (whatsappOtpSetting?.value == "false") {
         await Whatsapp.sendOtpThroughWhatsapp.send(otpCreate.code, number);
       }
 

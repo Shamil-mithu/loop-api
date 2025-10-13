@@ -8,31 +8,32 @@ const { ManualReceipt, SystemLocalization, Merchant, Customer,
 } = require("@src/models");
 
 const { Joi, S3 } = require("@src/lib");
-const { verifyAuth, validate } = require("@src/middlewares");
+const { verifyAuth, validate, tenantAuth } = require("@src/middlewares");
 const bodyParser = require("body-parser");
 const {
-    STATUS_CODE,
-    S3_ACL,
-    S3_UPLOAD_FOLDER,
-    ARABIC_RESPONSES,
-    RESPONSE_ACTION,
-    MANUAL_RECEIPT_STATUS,
-    MANUAL_RECEIPT_TYPE,
-    LOG_TYPE,
-    COLLECTION,
-    HTTP_VERBS,
-    MODEL,
-    ACTIVITY_ACTION_TYPE,
-    TRANSACTION_SOURCE_NAME,
-    TRANSACTION_SOURCE_TYPE,
-    TRANSACTION_TYPE,
-    TRANSACTION_STATUS,
-    MERCHANT_TYPE,
+  STATUS_CODE,
+  S3_ACL,
+  S3_UPLOAD_FOLDER,
+  ARABIC_RESPONSES,
+  RESPONSE_ACTION,
+  MANUAL_RECEIPT_STATUS,
+  MANUAL_RECEIPT_TYPE,
+  LOG_TYPE,
+  COLLECTION,
+  HTTP_VERBS,
+  MODEL,
+  ACTIVITY_ACTION_TYPE,
+  TRANSACTION_SOURCE_NAME,
+  TRANSACTION_SOURCE_TYPE,
+  TRANSACTION_TYPE,
+  TRANSACTION_STATUS,
+  MERCHANT_TYPE,
 } = require("@src/constants");
 const {
-    response,
-    getFileInfoFromBase64: { getFileInfoFromBase64 },
-    insertMessageLog, generateUniqueManualReceiptNumber
+  response,
+  getFileInfoFromBase64: { getFileInfoFromBase64 },
+  insertMessageLog,
+  generateUniqueManualReceiptNumber,
 } = require("@src/utils");
 const { S3_ENDPOINT, S3_CDN_URL, S3_BUCKET } = require("@src/config");
 const { S3Error } = require("@src/errors");
@@ -41,168 +42,178 @@ const moment = require("moment");
 // -----------------------------------------CONTROLLER---------------------------------------------------------
 
 const CONTROLLER = [
-    verifyAuth(),
-    bodyParser.json(),
-    validate({
-        body: Joi.object().keys({
-            merchant_id: Joi.string().objectId().required(),
-            date: Joi.date().required(),
-            attachment: Joi.string().required(),
-        }),
+  tenantAuth(),
+  verifyAuth(),
+  bodyParser.json(),
+  validate({
+    body: Joi.object().keys({
+      merchant_id: Joi.string().objectId().required(),
+      date: Joi.date().required(),
+      attachment: Joi.string().required(),
     }),
-    async function createManualReceipt(req, res) {
-        try {
-            const {
-                customer,
-                body: { date, merchant_id, attachment },
-            } = req;
+  }),
+  async function createManualReceipt(req, res) {
+    try {
+      const { tenantId } = req;
+      const {
+        customer,
+        body: { date, merchant_id, attachment },
+      } = req;
 
-            const isMerchant = await Merchant.findOne({
-                _id: merchant_id
-            })
-            if (!isMerchant) {
-                return response.send(0, STATUS_CODE.CONFLICT, 'no merchant with this merchant id', null, res, 'no merchant with this merchant id')
-            }
+      const isMerchant = await Merchant.findOne({
+        _id: merchant_id,
+      });
+      if (!isMerchant) {
+        return response.send(
+          0,
+          STATUS_CODE.CONFLICT,
+          "no merchant with this merchant id",
+          null,
+          res,
+          "no merchant with this merchant id"
+        );
+      }
 
-            let attachmentUrl = "";
+      let attachmentUrl = "";
 
-            if (attachment.length > 0) {
-                const fileInfo = getFileInfoFromBase64(attachment);
-                const base64Data = attachment.replace(/^data:image\/\w+;base64,/, "");
-                const buffer = Buffer.from(base64Data, "base64");
-                const { fileExtension, mimeType } = fileInfo;
+      if (attachment.length > 0) {
+        const fileInfo = getFileInfoFromBase64(attachment);
+        const base64Data = attachment.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(base64Data, "base64");
+        const { fileExtension, mimeType } = fileInfo;
 
-                const folder = S3_UPLOAD_FOLDER.MANUAL_RECEIPT;
-                const metadata = { customer: customer.id };
+        const folder = S3_UPLOAD_FOLDER.MANUAL_RECEIPT;
+        const metadata = { customer: customer.id };
 
-                const transformedBuffer = await S3.prepareForS3Upload(buffer);
-                const filePath = await S3.upload(
-                    `${folder}`,
-                    fileExtension,
-                    mimeType,
-                    transformedBuffer,
-                    S3_ACL.PUBLIC,
-                    metadata
-                );
+        const transformedBuffer = await S3.prepareForS3Upload(buffer);
+        const filePath = await S3.upload(
+          `${folder}`,
+          fileExtension,
+          mimeType,
+          transformedBuffer,
+          S3_ACL.PUBLIC,
+          metadata
+        );
 
-                attachmentUrl = `${S3_CDN_URL}/${S3_BUCKET}/${filePath}`;
-            }
-            const unique_number = await generateUniqueManualReceiptNumber()
-            let manual_receipt = await ManualReceipt.create({
-                customer_id: customer?.id,
-                image: attachmentUrl,
-                merchant_id,
-                date,
-                unique_number,
-            });
-            if (!manual_receipt) {
-                const sys_localization = await SystemLocalization.findOne({
-                    eid: customer.default_language,
-                    key: `${customer.default_language}_response_${RESPONSE_ACTION.COULD_NOT_UPLOAD_MANUAL_RECEIPT}`,
-                    lang_id: customer.default_language,
-                });
+        attachmentUrl = `${S3_CDN_URL}/${S3_BUCKET}/${filePath}`;
+      }
+      const unique_number = await generateUniqueManualReceiptNumber();
+      let manual_receipt = await ManualReceipt.create({
+        tenant_id: tenantId,
+        customer_id: customer?.id,
+        image: attachmentUrl,
+        merchant_id,
+        date,
+        unique_number,
+      });
+      if (!manual_receipt) {
+        const sys_localization = await SystemLocalization.findOne({
+          eid: customer.default_language,
+          key: `${customer.default_language}_response_${RESPONSE_ACTION.COULD_NOT_UPLOAD_MANUAL_RECEIPT}`,
+          lang_id: customer.default_language,
+        });
 
-                const responseMessage =
-                    customer.default_language == req.default_language || !sys_localization
-                        ? "could not create manual_receipt"
-                        : sys_localization.value;
-                return response.send(
-                    0,
-                    STATUS_CODE.SERVICE_UNAVAILABLE,
-                    responseMessage,
-                    null,
-                    res,
-                    null
-                );
-            }
-            manual_receipt = {
-                ...manual_receipt._doc,
-                created_at: manual_receipt.created_at.toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                id : manual_receipt.id
-                }),
-                time: moment(manual_receipt.created_at).format("hh:mm A"),
-            };
-            const sys_localization = await SystemLocalization.findOne({
-                eid: customer.default_language,
-                key: `${customer.default_language}_response_${RESPONSE_ACTION.MANUAL_RECEIPT_UPLOADED}`,
-                lang_id: customer.default_language,
-            });
-            const responseMessage =
-                customer.default_language == req.default_language || !sys_localization
-                    ? "manual_receipt uploaded successfully"
-                    : sys_localization.value;
-            const currency = await Currency.findOne({
-                code: "SAR",
-            });
-           
-            const mithuMerchant = await Merchant.findOne({
-                type: MERCHANT_TYPE.INTERNAL,
-            });
-            const networkTransactionSource = await TransactionSource.findOne({
-                name: TRANSACTION_SOURCE_NAME.MANUAL_RECEIPT_POINTS,
-                earning_type: TRANSACTION_TYPE.NETWORK,
-            });
+        const responseMessage =
+          customer.default_language == req.default_language || !sys_localization
+            ? "could not create manual_receipt"
+            : sys_localization.value;
+        return response.send(
+          0,
+          STATUS_CODE.SERVICE_UNAVAILABLE,
+          responseMessage,
+          null,
+          res,
+          null
+        );
+      }
+      manual_receipt = {
+        ...manual_receipt._doc,
+        created_at: manual_receipt.created_at.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          id: manual_receipt.id,
+        }),
+        time: moment(manual_receipt.created_at).format("hh:mm A"),
+      };
+      const sys_localization = await SystemLocalization.findOne({
+        eid: customer.default_language,
+        key: `${customer.default_language}_response_${RESPONSE_ACTION.MANUAL_RECEIPT_UPLOADED}`,
+        lang_id: customer.default_language,
+      });
+      const responseMessage =
+        customer.default_language == req.default_language || !sys_localization
+          ? "manual_receipt uploaded successfully"
+          : sys_localization.value;
+      const currency = await Currency.findOne({
+        code: "SAR",
+      });
 
-            await CustomerTransaction.create({
-                entity_id: merchant_id,
-                entity_type: COLLECTION.MERCHANT,
-                customer_id: customer.id,
-                reference_id: manual_receipt._id,
-                reference_type: COLLECTION.MANUAL_RECEIPT,
-                points: 0,
-                points_type: TRANSACTION_TYPE.NETWORK,
-                transaction_source_id: networkTransactionSource.id,
-                transaction_type: TRANSACTION_SOURCE_TYPE.EARNING,
-                status: TRANSACTION_STATUS.PENDING
-            });
+      const mithuMerchant = await Merchant.findOne({
+        type: MERCHANT_TYPE.INTERNAL,
+      });
+      const networkTransactionSource = await TransactionSource.findOne({
+        name: TRANSACTION_SOURCE_NAME.MANUAL_RECEIPT_POINTS,
+        earning_type: TRANSACTION_TYPE.NETWORK,
+      });
 
+      await CustomerTransaction.create({
+        tenant_id: tenantId,
+        entity_id: merchant_id,
+        entity_type: COLLECTION.MERCHANT,
+        customer_id: customer.id,
+        reference_id: manual_receipt._id,
+        reference_type: COLLECTION.MANUAL_RECEIPT,
+        points: 0,
+        points_type: TRANSACTION_TYPE.NETWORK,
+        transaction_source_id: networkTransactionSource.id,
+        transaction_type: TRANSACTION_SOURCE_TYPE.EARNING,
+        status: TRANSACTION_STATUS.PENDING,
+      });
 
-            return response.send(
-                1,
-                STATUS_CODE.OK,
-                responseMessage,
-                manual_receipt,
-                res,
-                null
-            );
-        } catch (error) {
-            console.log(error);
-            insertMessageLog(
-                LOG_TYPE.ERROR,
-                `Exception while uploading manual_receipt : ${error?.message}`,
-                {
-                    message: error?.message,
-                    stack: error?.stack,
-                    errorObject: error,
-                },
-                "/v1/manual_receipt/upload",
-                HTTP_VERBS.POST,
-                req?.customer?.id || null
-            );
-            if (error instanceof S3Error) {
-                response.send(
-                    0,
-                    error.status_code,
-                    "Couldn't upload manual_receipt",
-                    null,
-                    res,
-                    error.details
-                );
-            } else {
-                response.send(
-                    0,
-                    STATUS_CODE.INTERNAL_SERVER_ERROR,
-                    "Couldn't upload manual_receipt",
-                    null,
-                    res,
-                    error
-                );
-            }
-        }
-    },
+      return response.send(
+        1,
+        STATUS_CODE.OK,
+        responseMessage,
+        manual_receipt,
+        res,
+        null
+      );
+    } catch (error) {
+      console.log(error);
+      insertMessageLog(
+        LOG_TYPE.ERROR,
+        `Exception while uploading manual_receipt : ${error?.message}`,
+        {
+          message: error?.message,
+          stack: error?.stack,
+          errorObject: error,
+        },
+        "/v1/manual_receipt/upload",
+        HTTP_VERBS.POST,
+        req?.customer?.id || null
+      );
+      if (error instanceof S3Error) {
+        response.send(
+          0,
+          error.status_code,
+          "Couldn't upload manual_receipt",
+          null,
+          res,
+          error.details
+        );
+      } else {
+        response.send(
+          0,
+          STATUS_CODE.INTERNAL_SERVER_ERROR,
+          "Couldn't upload manual_receipt",
+          null,
+          res,
+          error
+        );
+      }
+    }
+  },
 ];
 
 

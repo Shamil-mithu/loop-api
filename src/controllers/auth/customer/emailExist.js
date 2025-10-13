@@ -1,7 +1,7 @@
 "use strict";
 
 const { Joi } = require("@src/lib");
-const { validate } = require("@src/middlewares");
+const { validate, tenantAuth } = require("@src/middlewares");
 const { Customer, Otp } = require("@src/models");
 const bodyParser = require("body-parser");
 const { response, insertMessageLog } = require("@src/utils");
@@ -18,6 +18,7 @@ const { sendGridMail } = require("@src/utils");
 const SECRET_KEY = process.env.JWT_AUTH_SECRET;
 
 const CONTROLLER = [
+  tenantAuth(),
   bodyParser.json(),
   bodyParser.urlencoded({ extended: true }),
   validate({
@@ -29,6 +30,7 @@ const CONTROLLER = [
   }),
   async function isEmailExistV1Controller(req, res) {
     try {
+      const { tenantId } = req;
       const { email } = req.body;
 
       const customer = await Customer.countDocuments({
@@ -56,6 +58,7 @@ const CONTROLLER = [
         });
 
         const newOtp = await Otp.create({
+          tenant_id: tenantId,
           code: otp,
           purpose: OTP_PURPOSES.EMAIL_VERIFICATION,
           token: token,

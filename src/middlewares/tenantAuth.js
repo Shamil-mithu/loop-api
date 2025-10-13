@@ -7,8 +7,8 @@
 
 const { TenantService } = require("@src/services");
 
-async function tenantMiddleware(req, res, next) {
-  try {
+async function tenantMiddleware() {
+  return async function (req, res, next) {
     const tenantId = req.headers["x-tenant-id"];
     if (!tenantId) return res.status(400).json({ error: "Missing tenant-id" });
 
@@ -17,9 +17,6 @@ async function tenantMiddleware(req, res, next) {
     req.tenantId = tenantId;
 
     next();
-  } catch (err) {
-    console.error("Tenant middleware error:", err);
-    res.status(500).json({ error: "Tenant resolution failed" });
   }
 }
 

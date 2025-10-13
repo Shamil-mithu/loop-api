@@ -1,7 +1,7 @@
 "use strict";
 
 const { Joi } = require("@src/lib");
-const { validate } = require("@src/middlewares");
+const { validate, tenantAuth } = require("@src/middlewares");
 const { Otp } = require("@src/models");
 const bodyParser = require("body-parser");
 const { response, insertMessageLog } = require("@src/utils");
@@ -21,6 +21,7 @@ const SECRET_KEY = process.env.JWT_AUTH_SECRET;
 //------------------------------------CONTROLLER-------------------------------------
 
 const CONTROLLER = [
+  tenantAuth(),
   bodyParser.json(),
   bodyParser.urlencoded({ extended: true }),
   validate({
@@ -35,6 +36,7 @@ const CONTROLLER = [
   }),
   async function loginInteraction(req, res) {
     try {
+      const { tenantId } = req;
       const { phone_number } = req.body;
       const ph_num =
         (phone_number.code.startsWith("+")
@@ -59,6 +61,7 @@ const CONTROLLER = [
         purpose: OTP_PURPOSES.LOGIN,
       });
       const otpCreate = await Otp.create({
+        tenant_id: tenantId,
         code: otp,
         identifier: ph_num,
         purpose: OTP_PURPOSES.LOGIN,
@@ -81,8 +84,7 @@ const CONTROLLER = [
       let number = `${otpCreate.identifier.substring(1)}`;
       if (phone_number.code == "966" || phone_number.code == "+966")
         await Taqnyat.sendOtpThrougTaqnyat.sendOtp(otpCreate.code, number);
-      else
-        await Whatsapp.sendOtpThroughWhatsapp.send(otpCreate.code, number);
+      else await Whatsapp.sendOtpThroughWhatsapp.send(otpCreate.code, number);
 
       // const smsData = await SMS.sendOtpThroughSMS.send(text, number)
       // console.log('sms res is', smsData)

@@ -2,7 +2,7 @@
 
 const { Ticket, SystemLocalization } = require("@src/models");
 const { Joi, S3 } = require("@src/lib");
-const { verifyAuth, validate } = require("@src/middlewares");
+const { verifyAuth, validate, tenantAuth } = require("@src/middlewares");
 const bodyParser = require("body-parser");
 const {
   STATUS_CODE,
@@ -28,6 +28,7 @@ const moment = require("moment");
 // -----------------------------------------CONTROLLER---------------------------------------------------------
 
 const CONTROLLER = [
+  tenantAuth(),
   verifyAuth(),
   bodyParser.json(),
   validate({
@@ -42,6 +43,7 @@ const CONTROLLER = [
   }),
   async function createTicket(req, res) {
     try {
+      const { tenantId } = req;
       const {
         customer,
         body: { support_type, title, description, attachment = "" },
@@ -73,6 +75,7 @@ const CONTROLLER = [
       }
       const unique_ticket_number = await generateUniqueTicketNumber();
       let ticket = await Ticket.create({
+        tenant_id: tenantId,
         user_id: customer?.id ?? null,
         support_type,
         title,

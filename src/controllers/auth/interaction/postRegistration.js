@@ -72,7 +72,9 @@ const CONTROLLER = [
       .required(),
   }),
   async function registerInteraction(req, res) {
+    
     try {
+      const { tenantId } = req;
       const {
         email,
         phone_number,
@@ -83,9 +85,8 @@ const CONTROLLER = [
         default_lang,
         default_currency,
         currency_type,
-        mobile_type
+        mobile_type,
       } = req.body;
-      const { tenantId } = req
       const secret = authenticator.generateSecret();
       const userExists = await Customer.countDocuments({
         phone_number,
@@ -149,7 +150,7 @@ const CONTROLLER = [
       });
 
       const newUser = await Customer.create({
-        tenant_id : tenantId,
+        tenant_id: tenantId,
         email: email?.length > 0 ? email : null,
         phone_number,
         gender,
