@@ -2,11 +2,11 @@ const swaggerDefinition = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Mithu App API",
+      title: "Loop App API",
       description: "",
       version: "1.0.0",
       contact: {
-        email: "info@mithu.com",
+        email: "info@Loop.com",
       },
     },
     components: {

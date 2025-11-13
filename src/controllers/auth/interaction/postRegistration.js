@@ -1,7 +1,7 @@
 "use strict";
 
 const { Joi } = require("@src/lib");
-const { validate,tenantAuth } = require("@src/middlewares");
+const { validate, tenantAuth } = require("@src/middlewares");
 const {
   Customer,
   CustomerType,
@@ -149,7 +149,7 @@ const CONTROLLER = [
       });
 
       const newUser = await Customer.create({
-        tenant_id : tenantId,
+        tenant_id: tenantId,
         email: email?.length > 0 ? email : null,
         phone_number,
         gender,
@@ -252,6 +252,7 @@ const CONTROLLER = [
 ];
 
 module.exports = CONTROLLER;
+
 /**
  * @swagger
  * tags:
