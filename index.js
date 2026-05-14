@@ -1,10 +1,10 @@
 const app = require('./server.js')
 let { API_PORT } = require('@src/config')
 const { response } = require('@src/utils')
-require('./database')
-require('./socket')
-require('@src/cronJobs')
-const { initializeWalletService } = require('@src/services/google-wallet/walletServiceInstance');
+// require('./database')
+// require('./socket')
+// require('@src/cronJobs')
+// const { initializeWalletService } = require('@src/services/google-wallet/walletServiceInstance');
 
 //handle internal server errors 
 app.use((err, req, res, next) => {
@@ -25,13 +25,13 @@ process.on('SIGINT', () => {
 
 const initializeApp = async () => {
     try {
-        await initializeWalletService();
+        // await initializeWalletService();
     } catch (error) {
         console.error("Error initializing Google Wallet Service:", error);
     }
 };
 
 app.listen(API_PORT, async () => {
-    await initializeApp();
+    // await initializeApp();
     console.log(`Server is listening at http://localhost:${API_PORT}`);
 });
